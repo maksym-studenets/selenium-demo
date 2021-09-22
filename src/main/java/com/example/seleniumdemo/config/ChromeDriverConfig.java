@@ -15,7 +15,7 @@ public class ChromeDriverConfig implements SeleniumWebDriverConfig {
     @Override
     public WebDriver webDriver() {
         WebDriver driver = getDriverOptions();
-        //
+        // By default Selenium will wait up to 15 before throwing ElementNotFoundException
         driver.manage().timeouts().implicitlyWait(Duration.ofSeconds(15));
         return driver;
     }
@@ -23,10 +23,10 @@ public class ChromeDriverConfig implements SeleniumWebDriverConfig {
     private WebDriver getDriverOptions() {
         ChromeOptions chromeOptions = new ChromeOptions();
         //chromeOptions.addArguments("headless");
-        chromeOptions.addArguments("disable-gpu");
         chromeOptions.addArguments("--no-sandbox");
         chromeOptions.addArguments("--disable-dev-shm-usage");
-        chromeOptions.addArguments("window-size=1280x800");
+//        chromeOptions.addArguments("window-size=1280x800");
+        chromeOptions.addArguments("start-maximized");
         chromeOptions.addArguments("--ignore-certificate-errors");
         chromeOptions.addArguments("--no-check-certificate");
         return new ChromeDriver(chromeOptions);
