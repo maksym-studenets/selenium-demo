@@ -1,8 +1,9 @@
 package com.example.seleniumdemo;
 
-import com.example.seleniumdemo.config.FirefoxDriverConfig;
+import com.example.seleniumdemo.config.ChromeDriverConfig;
 import com.example.seleniumdemo.config.SeleniumWebDriverConfig;
 import org.openqa.selenium.By;
+import org.openqa.selenium.JavascriptExecutor;
 import org.openqa.selenium.Keys;
 import org.openqa.selenium.OutputType;
 import org.openqa.selenium.WebDriver;
@@ -23,6 +24,7 @@ import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.IOException;
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
@@ -40,18 +42,20 @@ public class Application {
     public static void main(String[] args) {
         parseArguments(args, PARAMS);
 
-        SeleniumWebDriverConfig config = new FirefoxDriverConfig();
+        SeleniumWebDriverConfig config = new ChromeDriverConfig();
         WebDriver webDriver = config.webDriver();
 
         webDriver.get("https://tpot-dev.stotle.io");
         try {
             authenticateNative(webDriver);
-
             singleWindowSample(webDriver);
+
             // Tableau charts are embedded in an iframe, and require separate authentication (pop-up)
             tableauSample(webDriver);
+
             bigTemplateExample(webDriver);
 
+            testFullPageScreenshot(webDriver);
         } catch (Exception e) {
             System.err.println("Exception: " + e.getMessage());
             e.printStackTrace();
@@ -92,7 +96,8 @@ public class Application {
 
         String mainWindowHandle = webDriver.getWindowHandle(); // sort-of ID of the main window
 
-        webDriver.switchTo().frame(webDriver.findElement(By.tagName("iframe")));
+        WebElement iframe = webDriver.findElement(By.tagName("iframe"));
+        webDriver.switchTo().frame(iframe);
 
         new WebDriverWait(webDriver, Duration.ofSeconds(5))
                 .until(ExpectedConditions.presenceOfElementLocated(By.id("primary-auth")));
@@ -110,7 +115,7 @@ public class Application {
         passWordElement.sendKeys(Keys.RETURN);
 
         webDriver.switchTo().window(mainWindowHandle);
-        webDriver.switchTo().frame(webDriver.findElement(By.tagName("iframe")));
+        webDriver.switchTo().frame(iframe);
         new WebDriverWait(webDriver, Duration.ofSeconds(15))
                 .until(ExpectedConditions.visibilityOfElementLocated(By.className("tabLegendPanel")));
 
@@ -125,23 +130,52 @@ public class Application {
     }
 
     private static void bigTemplateExample(WebDriver webDriver) throws IOException {
-        webDriver.get("https://tpot-dev.stotle.io/dashboard/q?p=MzA1IyMxIyNOT05FIyNRV05qYjNWdWRDQlVaVzF3YkdGMFpTQW9UVTFKVkMxRVpYWXAjI1UwVkJVa05JIyMkJDk1IyMkYWNjb3VudCMjYWNjb3VudCMjIlNZU19ERUZBVUxUX0FMTCIjIyJBbGwiIyNmYWxzZSMjMCMjZmFsc2UjI3RydWUjIzY2IyMkZ2VvIyNnZW8jI1siU1lTX0RFRkFVTFRfQUxMIl0jI1siQWxsIl0jI2ZhbHNlIyMxIyN0cnVlIyN0cnVlIyM1MSMjJGNoYW5uZWwjI2NoYW5uZWwjI1siU1lTX0RFRkFVTFRfQUxMIl0jI1siQWxsIl0jI2ZhbHNlIyMyIyN0cnVlIyN0cnVl");
+        webDriver.get("https://tpot-dev.stotle.io/dashboard/q?p=MzQyIyMxIyNOT05FIyNUV0Y0SUVSbGJXOD0jI1UwVkJVa05JWDBSU1QxQkVUMWRPIyMkJDUxIyMkY2hhbm5lbCMjY2hhbm5lbCMjWyJTVEFURSBNRURJQ0FJRCIsIlRSSUNBUkUiLCJDT01NRVJDSUFMIiwiTUVESUNBUkUiXSMjWyJTVEFURSBNRURJQ0FJRCIsIlRSSUNBUkUiLCJDT01NRVJDSUFMIiwiTUVESUNBUkUiXSMjZmFsc2UjIzAjI3RydWUjI2ZhbHNlIyM2NiMjJGdlbyMjZ2VvIyNbIkFLLS1TdGF0ZSIsIkFMLS1TdGF0ZSIsIk5KLS1TdGF0ZSIsIk5NLS1TdGF0ZSIsIk5ILS1TdGF0ZSIsIk5ZLS1TdGF0ZSIsIkZMLS1TdGF0ZSIsIk1JLS1TdGF0ZSIsIlROLS1TdGF0ZSIsIlRYLS1TdGF0ZSIsIk9SLS1TdGF0ZSJdIyNbIkFsYXNrYSIsIkFsYWJhbWEiLCJOZXcgSmVyc2V5IiwiTmV3IE1leGljbyIsIk5ldyBIYW1wc2hpcmUiLCJOZXcgWW9yayIsIkZsb3JpZGEiLCJNaWNoaWdhbiIsIlRlbm5lc3NlZSIsIlRleGFzIiwiT3JlZ29uIl0jI2ZhbHNlIyMxIyN0cnVlIyNmYWxzZSMjOTUjIyRhY2NvdW50IyNhY2NvdW50IyMiU1lTX0RFRkFVTFRfQUxMIiMjIkFsbCIjI2ZhbHNlIyMyIyNmYWxzZSMjdHJ1ZQ%3D%3D");
         By templateContainer = By.className("dashboard-page");
 
         new WebDriverWait(webDriver, Duration.ofSeconds(15))
                 .until(ExpectedConditions.presenceOfAllElementsLocatedBy(By.cssSelector("div[id^='ready-']")));
         WebElement templateContainerElement = webDriver.findElement(templateContainer);
-        byte[] templateCutScreenshotBytes = templateContainerElement
-                .getScreenshotAs(OutputType.BYTES);
+        byte[] templateCutScreenshotBytes = templateContainerElement.getScreenshotAs(OutputType.BYTES);
         BufferedImage templateCutImage = ImageIO.read(new ByteArrayInputStream(templateCutScreenshotBytes));
+
+        WebElement vectorDownBelowElement = webDriver.findElement(By.id("vector1212-vector"));
+        byte[] vectorDownInTheTemplateBytes = vectorDownBelowElement.getScreenshotAs(OutputType.BYTES);
+        ImageIO.read(new ByteArrayInputStream(vectorDownInTheTemplateBytes));
 
         // Trying to make a full page screenshot. Implementation will vary significantly depending on a specific driver.
         Screenshot fullPageScreenshot = new AShot()
                 .coordsProvider(new WebDriverCoordsProvider())
-                .shootingStrategy(ShootingStrategies.viewportPasting(7_000))
-                .takeScreenshot(webDriver);
+                .shootingStrategy(ShootingStrategies.viewportPasting(2_000))
+                .takeScreenshot(webDriver, templateContainerElement);
         BufferedImage fullTemplateScreenshot = fullPageScreenshot.getImage();
 
+        WebElement lastElement = webDriver.findElement(By.id("vector1217-vector"));
+        JavascriptExecutor jsExecutor = (JavascriptExecutor) webDriver;
+        jsExecutor.executeScript("arguments[0].scrollIntoView(true)", lastElement);
+
+        String screenshotAs = templateContainerElement.getScreenshotAs(OutputType.BASE64);
+    }
+
+    private static void testFullPageScreenshot(WebDriver webDriver) throws IOException {
+        JavascriptExecutor jsExecutor = (JavascriptExecutor) webDriver;
+        jsExecutor.executeScript("window.open('about:blank', '_blank');");
+        ArrayList<String> tabs = new ArrayList<>(webDriver.getWindowHandles());
+        webDriver.switchTo().window(tabs.get(1));
+        webDriver.get("https://google.com");
+
+        webDriver.findElement(By.cssSelector("input[name=q]")).sendKeys("selenium webdriver");
+        webDriver.findElement(By.cssSelector("input[type=submit]")).click();
+
+        new WebDriverWait(webDriver, Duration.ofSeconds(3));
+        WebElement bodyElement = webDriver.findElement(By.tagName("body"));
+        Screenshot fullPageScreenshot = new AShot()
+                .coordsProvider(new WebDriverCoordsProvider())
+                .shootingStrategy(ShootingStrategies.viewportPasting(2_000))
+                .takeScreenshot(webDriver, bodyElement);
+        BufferedImage fullPageScreenshotImage = fullPageScreenshot.getImage();
+        File fullPageScreenshotFile = new File(getFileName("full-page-screenshot", webDriver));
+        ImageIO.write(fullPageScreenshotImage, "png", fullPageScreenshotFile);
     }
 
     private static void authenticateNative(WebDriver webDriver) {
